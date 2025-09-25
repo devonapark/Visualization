@@ -1,0 +1,318 @@
+---
+title: "Visualization_I"
+output: github_document
+date: "2025-09-25"
+---
+## Loading the data
+```{r}
+library(tidyverse)
+library(ggridges)
+library(p8105.datasets)
+```
+
+Import the weather data
+```{r}
+data("weather_df")
+```
+
+## Making our first plot
+
+```{r}
+#this is very formal 
+ggplot( data = weather_df, mapping = aes(x = tmin, y = tmax)) +
+  geom_point()
+
+#this is more what like you will see 
+ggplot( data = weather_df, aes(x = tmin, y = tmax)) +
+  geom_point()
+
+#you use the + operator because it was created before the pipe operator 
+```
+
+
+```{r}
+gg_weather_scatterplot = 
+  weather_df |> 
+    ggplot(aes(x = tmin, y = tmax)) +
+    geom_point()
+
+gg_weather_scatterplot
+#when we run this, we get a warning message that says 17 rows with missing values were removed
+```
+
+
+Check that some rows are missing 
+
+```{r}
+weather_df |> 
+  filter(is.na(tmax))
+
+#whole package called nanir (tidy friendly functions) to look at missingness across all variables
+```
+
+## Fancier Scatter Plots
+
+```{r}
+weather_df |> 
+  ggplot(aes(x = tmin, y = tmax, color = name)) +
+  geom_point(alpha = 0.3) +
+  geom_smooth(se = FALSE)
+  
+
+#when you want color to vary based on data, you put it within the aes statement
+#alpha ranges 0 to 1 where 1 is compeletly opaque
+#geom_smooth() --> includes FALSE satement to get rid of the SE shading (dont really trust that)
+```
+
+
+Where you define aesthetics does matter
+
+```{r}
+weather_df |> 
+  ggplot(aes(x = tmin, y = tmax)) +
+  geom_point(aes(color = name), alpha = 0.3, size = 0.6) +
+  geom_smooth(se = FALSE)
+#size can be a decimal or larger than 1
+
+weather_df |> 
+  ggplot(aes(x = tmin, y = tmax)) +
+  geom_point(aes(color = name, size = prcp), alpha = 0.3) +
+  geom_smooth(se = FALSE)
+
+#second way we have size of point is being adjusted based on prcp variable
+
+```
+
+## Using Faceting real quick
+
+Faceting -- breaking a single plot into multiple plots
+```{r}
+weather_df |> 
+  ggplot(aes(x = tmin, y = tmax)) +
+  geom_point(aes(color = name), alpha = 0.3, size = 0.6) +
+  geom_smooth(se = FALSE) +
+  facet_grid(.~ name)
+
+#. means nothing (1 row) and ~ (by) [name]
+
+weather_df |> 
+  ggplot(aes(x = tmin, y = tmax)) +
+  geom_point(aes(color = name), alpha = 0.3, size = 0.6) +
+  geom_smooth(se = FALSE) +
+  facet_grid(name ~.)
+
+#this second version means rows = # of [names] and column = . (aka nothing)
+```
+
+
+Now let's get a little more spicy
+
+```{r}
+weather_df |> 
+  ggplot(aes(x = tmin, y = tmax, color = name, shape = name)) +
+  geom_point(aes(size = prcp), alpha = 0.3) +
+  geom_smooth(se = FALSE) +
+  facet_grid(. ~ name)
+
+#shape = name --> changes shape of point based on [name]
+```
+
+
+## Learning Assessment 
+
+```{r}
+weather_df |> 
+  filter(name == "CentralPark_NY") |> 
+  mutate(
+    tmax_fahr = tmax*(9/5) + 32,
+    tmin_fahr = tmin*(9/5) + 32,  
+      ) |> 
+
+  ggplot(aes(x = tmin_fahr, y = tmax_fahr)) +
+  geom_point() +
+  geom_smooth(se = FALSE, method = "lm")
+
+#when we run this, we get a message in console telling us how it is creating the smooth line
+#^This message tells you what the smooth is doing
+#used ?geom_smooth() in console to find how to add method="" argument in 
+```
+
+## Small things
+
+We can get rid of the points
+
+```{r}
+weather_df |> 
+  ggplot(aes(x = tmin, y = tmax, color = name, shape = name)) +
+  #geom_point(alpha = 0.3) +
+  geom_smooth(se = FALSE)
+
+#Reminder that order matters
+weather_df |> 
+  ggplot(aes(x = tmin, y = tmax, color = name, shape = name)) +
+  geom_smooth(se = FALSE) +
+  geom_point()
+```
+
+## `geom_hex()`
+Random use of Hex geom 
+
+```{r}
+weather_df |> 
+  ggplot(aes(x = tmin, y = tmax)) +
+  geom_hex()
+```
+
+
+If someone wanted the entire thing to be purple, do it outside of aes
+```{r}
+weather_df |> 
+  ggplot(aes(x = tmin, y = tmax)) +
+  geom_point(color = "purple") +
+  geom_smooth(se = FALSE)
+
+#this also works with any color HEX code
+weather_df |> 
+  ggplot(aes(x = tmin, y = tmax)) +
+  geom_point(color = "#999bfd") +
+  geom_smooth(se = FALSE)
+```
+
+# PLOTS
+## Creating Univariate PLots
+
+```{r}
+weather_df |> 
+  ggplot(aes(x = tmin)) +
+  geom_histogram(color = "white", fill = "#999bfd")
+
+
+#overlapping histogram
+weather_df |> 
+  ggplot(aes(x = tmin, fill = name)) +
+  geom_histogram()
+
+#facet them
+weather_df |> 
+  ggplot(aes(x = tmin, fill = name)) +
+  geom_histogram() +
+  facet_grid(name ~ .)
+
+#as a univariate, aes() takes only one variable
+```
+
+## Density
+Maybe a desnity plot, anyone?
+
+```{r}
+weather_df |> 
+  ggplot(aes(x = tmin, fill = name)) +
+  geom_density(alpha = 0.2)
+
+#frequency divided by the total
+```
+
+## Box
+Or a box plot perhaps....
+
+```{r}
+#Note: this takes two aesthetics now
+
+weather_df |> 
+  ggplot(aes(x = tmin, y = tmax, fill = name)) +
+  geom_boxplot()
+
+#In this case whether you put fill = name in ggplot(aes()) or in geom_boxplot(aes()), you will get the sae result 
+weather_df |> 
+  ggplot(aes(x = tmin, y = tmax)) +
+  geom_boxplot(aes(fill = name))
+
+
+```
+
+
+When you map an aesthetic in aes, you say you want it to vary by some variable in the dataset
+When you set an aesthetic outside aes(), you are setting it for the entire figure 
+
+## Violin
+Now, back to the days of the violin plot
+
+```{r}
+weather_df |> 
+  ggplot(aes(x = name, y = tmax)) +
+  geom_violin(aes(fill = name))
+
+
+#vertical version of the density plot turned symmetrical
+```
+
+## Ridge
+Ridge plots
+
+```{r}
+weather_df |> 
+  ggplot(aes(x = tmin, y = name)) +
+  geom_density_ridges()
+
+#Across the y axis we have the names 
+```
+
+
+# Learning Assessment - Univariate PLots
+
+```{r}
+weather_df |> 
+  ggplot(aes(x = prcp, fill = name)) +
+  geom_density(alpha = 0.2)
+#^looks bad
+
+weather_df |> 
+  ggplot(aes(x = prcp, fill = name)) +
+  geom_histogram() +
+  facet_grid(name ~ .)
+#^looks maybe...slightly?! better...
+
+weather_df |> 
+  filter(prcp > 5, prcp < 1000) |> 
+  ggplot(aes(x = prcp, fill = name)) +
+  geom_density(alpha = 0.2)
+#this zooms in --> shortens the scale--> but make sure you notify your audience! 
+
+
+```
+
+
+# Saving and Embedding Plots 
+
+Saving plots
+
+```{r}
+ggp_weather_violins = 
+    weather_df |> 
+    ggplot(aes(x = name, y = tmax)) +
+    geom_violin(aes(fill = name))
+
+ggp_weather_violins
+
+ggsave("Visualization_I_files/weather_violin_plot.pdf", ggp_weather_violins, width = 8, height = 6)
+```
+
+
+embedding plots ......... i have no idea what we were talking about here
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
