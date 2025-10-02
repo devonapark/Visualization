@@ -160,3 +160,123 @@ weather_df |>
   knitr::kable(digits = 2)
 ```
 
+
+# Mutate with groups
+
+```{r}
+weather_df |> 
+  group_by(name) |> 
+  mutate(
+    mean_tmax = mean(tmax, na.rm = TRUE),
+    center_tmax = tmax - mean_tmax
+  ) |> 
+  ggplot(aes(x = date, y = center_tmax, color = name)) +
+  geom_point()
+
+#we are standardizing --> shifting our means so they equal zero 
+```
+
+Look for cold days
+
+```{r}
+weather_df |> 
+  group_by(name, month) |> 
+  mutate(temp_rank = min_rank(desc(tmin))) |> 
+  filter(temp_rank < 2)
+
+#without filtering every day would be ranked by tmin
+weather_df |> 
+  group_by(name, month) |> 
+  mutate(temp_rank = min_rank(tmin))
+```
+
+What about lags?
+
+```{r}
+weather_df |> 
+  mutate(lagged_tmax = lag(tmax))
+#current form is not taking into account that we have different locations, grouping fixes this
+#by default lag() is 1. what is the previous or next value you are interested in 
+
+
+weather_df |> 
+  group_by(name) |> 
+  mutate(lagged_tmax = lag(tmax))
+```
+
+
+Use the variables you create
+
+```{r}
+weather_df |> 
+  group_by(name) |> 
+  mutate(
+    temp_change = tmax - lag(tmax)
+  ) |> 
+  summarise(
+    sd_tmax_change = sd(temp_change, na.rm = TRUE),
+    tmax_change_max = max(temp_change, na.rm = TRUE)
+  )
+```
+
+
+Figure out what day it happened
+
+```{r}
+weather_df |> 
+  group_by(name) |> 
+  mutate(
+    temp_change = tmax - lag(tmax),
+    change_rank = min_rank(desc(temp_change))
+    )|> 
+  filter(change_rank < 2)
+
+
+#Slightly slimmer version 
+weather_df |> 
+  group_by(name) |> 
+  mutate(
+    temp_change = tmax - lag(tmax)
+    )|> 
+  filter(min_rank(desc(temp_change)) < 2)
+
+```
+
+Let's revist the pulse dataset
+
+```{r}
+pulse_df =
+  haven::read_sas("data/public_pulse_data.sas7bdat") |>  
+  janitor::clean_names() |> 
+  pivot_longer(
+    bdi_score_bl:bdi_score_12m,
+    names_to = "visit",
+    names_prefix = "bdi_score_",
+    values_to = "bdi"
+  ) |> 
+  mutate(visit = replace(visit, visit == "bl", "00m"),
+         visit = fct_inorder(visit)
+        )  
+
+
+pulse_df |> 
+  ggplot(aes(x = visit, y = bdi)) +
+  geom_boxplot()
+
+pulse_df |> 
+  group_by(visit) |> 
+  summarise(
+    mean_bdi = mean(bdi, na.rm =TRUE),
+    median_bdi = median(bdi, na.rm = TRUE)
+  ) |> 
+  knitr::kable(digits=2)
+
+```
+
+
+
+
+
+
+
+

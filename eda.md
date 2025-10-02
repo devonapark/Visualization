@@ -65,7 +65,7 @@ weather_df |>
     ## Warning: Removed 15 rows containing non-finite outside the scale range
     ## (`stat_bin()`).
 
-<img src="epa_files/figure-gfm/unnamed-chunk-3-1.png" width="90%" />
+<img src="eda_files/figure-gfm/unnamed-chunk-3-1.png" width="90%" />
 
 ``` r
 #right off the bat we can see some extreme values.
@@ -94,7 +94,7 @@ weather_df |>
   geom_point()
 ```
 
-<img src="epa_files/figure-gfm/unnamed-chunk-5-1.png" width="90%" />
+<img src="eda_files/figure-gfm/unnamed-chunk-5-1.png" width="90%" />
 
 ``` r
 #check out why waterhole is looking different than Malakai and NYC? It is because of how they got their temp.
@@ -268,7 +268,7 @@ weather_df |>
     ## `summarise()` has grouped output by 'name'. You can override using the
     ## `.groups` argument.
 
-<img src="epa_files/figure-gfm/unnamed-chunk-10-1.png" width="90%" />
+<img src="eda_files/figure-gfm/unnamed-chunk-10-1.png" width="90%" />
 
 Sometimes you need to format results more nicely
 
@@ -331,13 +331,13 @@ weather_df |>
     ## Warning: Removed 17 rows containing missing values or values outside the scale range
     ## (`geom_point()`).
 
-<img src="epa_files/figure-gfm/unnamed-chunk-12-1.png" width="90%" />
+<img src="eda_files/figure-gfm/unnamed-chunk-12-1.png" width="90%" />
 
 ``` r
 #we are standardizing --> shifting our means so they equal zero 
 ```
 
-# Look for cold days
+Look for cold days
 
 ``` r
 weather_df |> 
@@ -384,3 +384,156 @@ weather_df |>
     ##  9 CentralPark_NY USW00094728 2021-01-09     0   2.8  -4.3 2021-01-01         7
     ## 10 CentralPark_NY USW00094728 2021-01-10     0   5    -1.6 2021-01-01        13
     ## # ℹ 2,180 more rows
+
+What about lags?
+
+``` r
+weather_df |> 
+  mutate(lagged_tmax = lag(tmax))
+```
+
+    ## # A tibble: 2,190 × 8
+    ##    name           id         date        prcp  tmax  tmin month      lagged_tmax
+    ##    <chr>          <chr>      <date>     <dbl> <dbl> <dbl> <date>           <dbl>
+    ##  1 CentralPark_NY USW000947… 2021-01-01   157   4.4   0.6 2021-01-01        NA  
+    ##  2 CentralPark_NY USW000947… 2021-01-02    13  10.6   2.2 2021-01-01         4.4
+    ##  3 CentralPark_NY USW000947… 2021-01-03    56   3.3   1.1 2021-01-01        10.6
+    ##  4 CentralPark_NY USW000947… 2021-01-04     5   6.1   1.7 2021-01-01         3.3
+    ##  5 CentralPark_NY USW000947… 2021-01-05     0   5.6   2.2 2021-01-01         6.1
+    ##  6 CentralPark_NY USW000947… 2021-01-06     0   5     1.1 2021-01-01         5.6
+    ##  7 CentralPark_NY USW000947… 2021-01-07     0   5    -1   2021-01-01         5  
+    ##  8 CentralPark_NY USW000947… 2021-01-08     0   2.8  -2.7 2021-01-01         5  
+    ##  9 CentralPark_NY USW000947… 2021-01-09     0   2.8  -4.3 2021-01-01         2.8
+    ## 10 CentralPark_NY USW000947… 2021-01-10     0   5    -1.6 2021-01-01         2.8
+    ## # ℹ 2,180 more rows
+
+``` r
+#current form is not taking into account that we have different locations, grouping fixes this
+#by default lag() is 1. what is the previous or next value you are interested in 
+
+
+weather_df |> 
+  group_by(name) |> 
+  mutate(lagged_tmax = lag(tmax))
+```
+
+    ## # A tibble: 2,190 × 8
+    ## # Groups:   name [3]
+    ##    name           id         date        prcp  tmax  tmin month      lagged_tmax
+    ##    <chr>          <chr>      <date>     <dbl> <dbl> <dbl> <date>           <dbl>
+    ##  1 CentralPark_NY USW000947… 2021-01-01   157   4.4   0.6 2021-01-01        NA  
+    ##  2 CentralPark_NY USW000947… 2021-01-02    13  10.6   2.2 2021-01-01         4.4
+    ##  3 CentralPark_NY USW000947… 2021-01-03    56   3.3   1.1 2021-01-01        10.6
+    ##  4 CentralPark_NY USW000947… 2021-01-04     5   6.1   1.7 2021-01-01         3.3
+    ##  5 CentralPark_NY USW000947… 2021-01-05     0   5.6   2.2 2021-01-01         6.1
+    ##  6 CentralPark_NY USW000947… 2021-01-06     0   5     1.1 2021-01-01         5.6
+    ##  7 CentralPark_NY USW000947… 2021-01-07     0   5    -1   2021-01-01         5  
+    ##  8 CentralPark_NY USW000947… 2021-01-08     0   2.8  -2.7 2021-01-01         5  
+    ##  9 CentralPark_NY USW000947… 2021-01-09     0   2.8  -4.3 2021-01-01         2.8
+    ## 10 CentralPark_NY USW000947… 2021-01-10     0   5    -1.6 2021-01-01         2.8
+    ## # ℹ 2,180 more rows
+
+Use the variables you create
+
+``` r
+weather_df |> 
+  group_by(name) |> 
+  mutate(
+    temp_change = tmax - lag(tmax)
+  ) |> 
+  summarise(
+    sd_tmax_change = sd(temp_change, na.rm = TRUE),
+    tmax_change_max = max(temp_change, na.rm = TRUE)
+  )
+```
+
+    ## # A tibble: 3 × 3
+    ##   name           sd_tmax_change tmax_change_max
+    ##   <chr>                   <dbl>           <dbl>
+    ## 1 CentralPark_NY           4.43            12.2
+    ## 2 Molokai_HI               1.24             5.6
+    ## 3 Waterhole_WA             3.04            11.1
+
+Figure out what day it happened
+
+``` r
+weather_df |> 
+  group_by(name) |> 
+  mutate(
+    temp_change = tmax - lag(tmax),
+    change_rank = min_rank(desc(temp_change))
+    )|> 
+  filter(change_rank < 2)
+```
+
+    ## # A tibble: 4 × 9
+    ## # Groups:   name [3]
+    ##   name     id    date        prcp  tmax  tmin month      temp_change change_rank
+    ##   <chr>    <chr> <date>     <dbl> <dbl> <dbl> <date>           <dbl>       <int>
+    ## 1 Central… USW0… 2022-03-06    15  20     6.1 2022-03-01        12.2           1
+    ## 2 Molokai… USW0… 2021-01-19     0  27.8  21.1 2021-01-01         5.6           1
+    ## 3 Molokai… USW0… 2022-11-29     0  27.8  19.4 2022-11-01         5.6           1
+    ## 4 Waterho… USS0… 2022-12-22    76   1.5 -17.2 2022-12-01        11.1           1
+
+``` r
+#Slightly slimmer version 
+weather_df |> 
+  group_by(name) |> 
+  mutate(
+    temp_change = tmax - lag(tmax)
+    )|> 
+  filter(min_rank(desc(temp_change)) < 2)
+```
+
+    ## # A tibble: 4 × 8
+    ## # Groups:   name [3]
+    ##   name           id          date        prcp  tmax  tmin month      temp_change
+    ##   <chr>          <chr>       <date>     <dbl> <dbl> <dbl> <date>           <dbl>
+    ## 1 CentralPark_NY USW00094728 2022-03-06    15  20     6.1 2022-03-01        12.2
+    ## 2 Molokai_HI     USW00022534 2021-01-19     0  27.8  21.1 2021-01-01         5.6
+    ## 3 Molokai_HI     USW00022534 2022-11-29     0  27.8  19.4 2022-11-01         5.6
+    ## 4 Waterhole_WA   USS0023B17S 2022-12-22    76   1.5 -17.2 2022-12-01        11.1
+
+Let’s revist the pulse dataset
+
+``` r
+pulse_df =
+  haven::read_sas("data/public_pulse_data.sas7bdat") |>  
+  janitor::clean_names() |> 
+  pivot_longer(
+    bdi_score_bl:bdi_score_12m,
+    names_to = "visit",
+    names_prefix = "bdi_score_",
+    values_to = "bdi"
+  ) |> 
+  mutate(visit = replace(visit, visit == "bl", "00m"),
+         visit = fct_inorder(visit)
+        )  
+
+
+pulse_df |> 
+  ggplot(aes(x = visit, y = bdi)) +
+  geom_boxplot()
+```
+
+    ## Warning: Removed 879 rows containing non-finite outside the scale range
+    ## (`stat_boxplot()`).
+
+<img src="eda_files/figure-gfm/unnamed-chunk-17-1.png" width="90%" />
+
+``` r
+pulse_df |> 
+  group_by(visit) |> 
+  summarise(
+    mean_bdi = mean(bdi, na.rm =TRUE),
+    median_bdi = median(bdi, na.rm = TRUE)
+  ) |> 
+  knitr::kable(digits=2)
+```
+
+| visit | mean_bdi | median_bdi |
+|:------|---------:|-----------:|
+| 00m   |     7.99 |          6 |
+| 01m   |     6.05 |          4 |
+| 06m   |     5.67 |          4 |
+| 12m   |     6.10 |          4 |
