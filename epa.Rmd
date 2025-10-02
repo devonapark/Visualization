@@ -105,7 +105,7 @@ weather_df |>
 #distinct instances
 weather_df |> 
   group_by(month) |> 
-  summarize(
+  summarise(
     n = n_distinct(date)
   )
 ```
@@ -119,10 +119,44 @@ weather_df |>
 ```
 
 
+```{r}
+weather_df |> 
+  group_by(name, month) |> 
+  summarise(
+    mean_tmax = mean(tmax, na.rm = TRUE),
+    median_tmin = median(tmin, na.rm = TRUE),
+    sd_prcp = sd(prcp, na.rm = TRUE)
+  ) |> view()
 
+```
 
+This is still a dataframe
 
+```{r}
+weather_df |> 
+  group_by(name, month) |> 
+  summarise(
+    mean_tmax = mean(tmax, na.rm = TRUE)
+    ) |> 
+  ggplot(aes(x = month, y = mean_tmax, color = name)) +
+  geom_point() +
+  geom_line()
+  
+  
+```
 
+Sometimes you need to format results more nicely
 
-
+```{r}
+weather_df |> 
+  group_by(name, month) |> 
+  summarise(
+    mean_tmax = mean(tmax, na.rm = TRUE)
+  ) |> 
+  pivot_wider(
+    names_from = name,
+    values_from = mean_tmax
+  ) |> 
+  knitr::kable(digits = 2)
+```
 
